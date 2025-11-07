@@ -1,33 +1,37 @@
-# --- 1. 빌드(Build) 스테이지 ---
-# Java 21과 Gradle을 포함한 이미지를 기반으로 시작합니다.
-FROM gradle:8.5-jdk21 AS build_stage
+# ============================
+# 1️⃣ Build Stage
+# ============================
+FROM gradle:8.5-jdk21 AS build
 
-# 작업 디렉토리를 /app으로 설정합니다.
+# 빌드 캐시 활용을 위해 작업 디렉토리 설정
 WORKDIR /app
 
-# Gradle 빌드에 필요한 파일들을 먼저 복사합니다.
-# (이렇게 하면 의존성이 변경되지 않았을 때 빌드 캐시를 사용해 속도가 빨라집니다.)
-COPY build.gradle settings.gradle /app/
-COPY gradle /app/gradle
-COPY src /app/src
+# Gradle wrapper와 설정 파일만 먼저 복사 (의존성 캐시 최적화)
+COPY gradlew ./
+COPY gradle gradle
+COPY build.gradle settings.gradle ./
 
-# Gradle build 명령어를 실행하여 .jar 파일을 생성합니다.
-RUN gradle build
+# Gradle 의존성만 미리 다운로드 (빌드 캐시 유지)
+RUN ./gradlew dependencies --no-daemon || return 0
 
-# --- 2. 실행(Run) 스테이지 ---
-# 실제 서버를 실행할 더 가볍고 효율적인 Java 21 런타임 이미지를 사용합니다.
-FROM eclipse-temurin:21-jre
+# 소스 코드 복사
+COPY src src
 
-# 작업 디렉토리를 /app으로 설정합니다.
+# 실제 빌드 수행
+RUN ./gradlew clean build -x test --no-daemon --parallel
+
+# ============================
+# 2️⃣ Runtime Stage
+# ============================
+FROM eclipse-temurin:21-jre AS runtime
+
 WORKDIR /app
 
-# 빌드 스테이지(BUILD_STAGE)에서 생성된 .jar 파일을 실행 스테이지로 복사합니다.
-# .jar 파일 경로는 본인의 프로젝트에 맞게 확인하세요.
-# (build/libs/mymoji-0.0.1-SNAPSHOT.jar 가 맞는지 확인)
-COPY --from=build_stage /app/build/libs/mymoji-0.0.1-SNAPSHOT.jar app.jar
+# build stage에서 빌드된 JAR 파일 복사
+COPY --from=build /app/build/libs/mymoji-*-SNAPSHOT.jar app.jar
 
-# 컨테이너가 8080 포트를 외부에 노출하도록 설정합니다.
+# 포트 노출 (Spring Boot 기본)
 EXPOSE 8080
 
-# 컨테이너가 시작될 때 실행할 명령어입니다.
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Render는 ENTRYPOINT 보다 CMD 선호 → 유지보수 및 오버라이드 용이
+CMD ["java", "-jar", "app.jar"]
