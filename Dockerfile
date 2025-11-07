@@ -16,7 +16,7 @@ RUN gradle build
 
 # --- 2. 실행(Run) 스테이지 ---
 # 실제 서버를 실행할 더 가볍고 효율적인 Java 21 런타임 이미지를 사용합니다.
-FROM openjdk:21-jre
+FROM eclipse-temurin:21-jre
 
 # 작업 디렉토리를 /app으로 설정합니다.
 WORKDIR /app
