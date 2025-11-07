@@ -31,6 +31,6 @@ public class DailyAnswer {
 
     @CreationTimestamp // 엔티티 생성 시 현재 시간 자동 저장
     @Column(name = "created_at", updatable = false) // 생성시에만 저장, 업데이트 불가
-    private LocalDateTime created_at;
+    private LocalDateTime createdAt;
 
 }

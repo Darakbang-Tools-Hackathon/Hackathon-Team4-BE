@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 @Entity
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor
 public class Users {
     @Id
     @GeneratedValue
@@ -17,7 +18,7 @@ public class Users {
     private Long id;
 
     //firebase uid
-    private String uId;
+    private String uid;
 
     @Column(length=20)
     private String nickname;
@@ -33,4 +34,7 @@ public class Users {
     private double attribute4=50.0; //성실성
     @Builder.Default
     private double attribute5=50.0; //개방성
+
+
+
 }
