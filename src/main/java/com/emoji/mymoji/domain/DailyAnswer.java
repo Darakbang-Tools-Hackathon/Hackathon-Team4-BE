@@ -1,16 +1,21 @@
 package com.emoji.mymoji.domain;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import jakarta.persistence.Id;
 import org.hibernate.annotations.CreationTimestamp;
+
+import java.sql.ConnectionBuilder;
 import java.time.LocalDateTime;
 
-
+@Builder
 @Entity
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor
 public class DailyAnswer {
 
     @Id

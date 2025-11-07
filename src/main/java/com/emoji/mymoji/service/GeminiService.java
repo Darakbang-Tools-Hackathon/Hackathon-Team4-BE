@@ -2,6 +2,7 @@ package com.emoji.mymoji.service; // (패키지 경로는 본인에 맞게)
 
 
 import com.emoji.mymoji.domain.Users;
+import com.emoji.mymoji.dto.geminiDto.GeminiEmojiResponse;
 import com.emoji.mymoji.dto.geminiDto.GeminiRequest;
 import com.emoji.mymoji.dto.geminiDto.GeminiResponse;
 import lombok.RequiredArgsConstructor;
@@ -23,18 +24,15 @@ public class GeminiService {
     @Value("${SPRING_AI_GOOGLE_GEMINI_API_KEY}")
     private String geminiApiKey;
 
-    // 3. Google AI API 엔드포인트 (gemini-pro 모델 사용)
+    // 3. Google AI API 엔드포인트
     private static final String GEMINI_API_URL =
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=";
 
-    // 4. 사용자가 선택한 20개의 이모티콘 목록 (동일)
-    private static final String EMOJI_LIST =
-            "🤩, 🥳, 🐶, 🦾, 🚀, 🦦, ☕️, 🪴, 🗿, 💡, 🔭, 🦊, 🦋, 😵‍💫, 🤪, 🤡, 🌪️, 🫠, 🔋, 🌵";
 
     /**
      * Users 객체(5가지 특성치)를 받아 Gemini API로 이모티콘을 생성합니다.
      */
-    public String getEmojiForAttributes(Users user) {
+    public GeminiEmojiResponse getEmojiForAttributes(Users user) {
 
         // 5. API에 전달할 프롬프트(명령어) 생성 (동일)
         String prompt = buildPrompt(user);
@@ -60,14 +58,14 @@ public class GeminiService {
 
             // 10. API 응답에서 이모티콘만 깔끔하게 추출
             if (response != null && response.extractText() != null) {
-                return extractEmoji(response.extractText());
+                return parseGeminiResponse(response.extractText());
             } else {
-                return "🤔"; // 응답이 비었을 경우
+                return GeminiEmojiResponse.fallback(); // 응답이 비었을 경우
             }
         } catch (Exception e) {
             // API 호출 실패 시
             e.printStackTrace();
-            return "⚠️"; // API 오류 시
+            return GeminiEmojiResponse.fallback();
         }
     }
 
@@ -76,32 +74,41 @@ public class GeminiService {
      */
     private String buildPrompt(Users user) {
         return String.format(
-                "당신은 사람의 5가지 성격 특성 점수(0~100)를 보고, 그 사람의 현재 상태를 가장 잘 나타내는 이모티콘 1개를 추천하는 전문가입니다.\n" +
-                        "반드시 다음 20개의 이모티콘 목록 중에서만 골라야 합니다:\n" +
-                        "[%s]\n\n" +
+                "당신은 사람의 5가지 성격 특성 점수(0~100)를 보고, 그 사람의 현재 상태를 가장 잘 나타내는 이모티콘 1개와, 그에 대한 1~2줄짜리 짧은 설명 및 감정 관리 팁을 제공하는 전문가입니다.\n" +
+                        // "[삭제] 반드시 다음 20개의 이모티콘 목록 중에서만 골라야 합니다..."
+                        "\n" +
                         "다음은 사용자의 현재 점수입니다:\n" +
                         "- 정서 안정성 (낮을수록 불안): %.1f\n" +
                         "- 외향성 (높을수록 활기참): %.1f\n" +
                         "- 친화성 (높을수록 다정함): %.1f\n" +
                         "- 성실성 (높을수록 계획적): %.1f\n" +
                         "- 개방성 (높을수록 호기심 많음): %.1f\n\n" +
-                        "이 상태를 가장 잘 표현하는 이모티콘 1개만 골라서 응답하세요. 다른 설명이나 텍스트 없이, 오직 이모티콘 1개만 반환해야 합니다.",
-                EMOJI_LIST,
+                        "반드시 다음 형식으로만 응답해야 합니다:\n" +
+                        "Emoji: [선택한 이모티콘 1개]\n" +
+                        "Description: [생성한 설명과 팁]",
                 user.getAttribute1(), user.getAttribute2(), user.getAttribute3(),
                 user.getAttribute4(), user.getAttribute5()
         );
     }
 
     /**
-     * Gemini의 응답에서 이모티콘만 추출합니다. (동일)
+     *  Gemini의 응답("Emoji: ...\nDescription: ...")을 파싱하는 메소드
      */
-    private String extractEmoji(String response) {
-        response = response.trim();
-        for (String emoji : EMOJI_LIST.split(", ")) {
-            if (response.contains(emoji)) {
-                return emoji;
-            }
+    private GeminiEmojiResponse parseGeminiResponse(String response) {
+        try {
+            // "Emoji: 🤩"
+            String emojiLine = response.split("\n")[0];
+            String emoji = emojiLine.split("Emoji: ")[1].trim();
+
+            // "Description: 들뜬 상태입니다..."
+            String descLine = response.split("\n")[1];
+            String description = descLine.split("Description: ")[1].trim();
+
+            return new GeminiEmojiResponse(emoji, description);
+        } catch (Exception e) {
+            // 파싱 실패 (Gemini가 형식을 따르지 않았을 경우)
+            e.printStackTrace();
+            return GeminiEmojiResponse.fallback();
         }
-        return "🤔";
     }
 }

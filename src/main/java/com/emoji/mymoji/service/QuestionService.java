@@ -14,7 +14,7 @@ public class QuestionService {
 
     private final QuestionRepo questionRepo;
 
-    private static final int DAILY_QUESTION_COUNT = 5;
+    private static final int DAILY_QUESTION_COUNT = 6;
 
     /**
      * DB에서 무작위로 6개의 질문을 (엔티티) 리스트로 반환합니다.

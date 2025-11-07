@@ -27,6 +27,10 @@ public class EmojiHistory {
 
     private String emoji; // 예: "😊"
 
+    // 이모티콘 설명 및 감정 관리 팁
+    @Column(length = 512)
+    private String description;
+
     // 이모티콘 생성 당시의 5가지 특성치 스냅샷
     private double attribute1;
     private double attribute2;
