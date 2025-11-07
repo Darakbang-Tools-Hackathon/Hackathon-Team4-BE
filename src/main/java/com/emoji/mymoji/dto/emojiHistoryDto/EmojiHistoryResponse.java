@@ -6,10 +6,5 @@ import java.time.LocalDateTime;
 public record EmojiHistoryResponse(
         String emoji,
         String description,
-        double attribute1,
-        double attribute2,
-        double attribute3,
-        double attribute4,
-        double attribute5,
         LocalDateTime createdAt
 ) {}

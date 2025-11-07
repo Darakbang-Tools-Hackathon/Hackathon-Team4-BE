@@ -2,7 +2,6 @@ package com.emoji.mymoji.controller;
 
 import com.emoji.mymoji.dto.dailyAnswerDto.AnswerRequestDto;
 import com.emoji.mymoji.dto.dailyAnswerDto.AnswerResponse;
-import com.emoji.mymoji.dto.emojiHistoryDto.EmojiHistoryResponse;
 import com.emoji.mymoji.service.DailyAnswerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +23,7 @@ public class DailyAnswerController {
      * @return 오늘 생성된 이모티콘과 그 당시의 특성치 스냅샷
      */
     @PostMapping("/{uid}")
-    public ResponseEntity<AnswerResponse> SubmitAnswers(
+    public ResponseEntity<AnswerResponse> submitAnswers(
             @PathVariable String uid,
             @RequestBody List<AnswerRequestDto> answerDtos) {
         try {

@@ -6,7 +6,6 @@ import com.emoji.mymoji.dto.userDto.UserResponse;
 import com.emoji.mymoji.service.EmojiService;
 import com.emoji.mymoji.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.apache.catalina.User;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

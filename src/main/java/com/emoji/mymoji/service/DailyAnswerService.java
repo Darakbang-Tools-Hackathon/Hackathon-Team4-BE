@@ -18,11 +18,11 @@ import java.util.Map;
 public class DailyAnswerService {
 
     // 1. 필요한 모든 리포지토리와 서비스 주입
-    private final UserRepo usersRepository;
-    private final QuestionRepo questionRepository;
-    private final DailyAnswerRepo dailyAnswerRepository;
-    private final WeightingRepo weightingLogicRepository;
-    private final EmojiHistoryRepo emojiHistoryRepository;
+    private final UserRepo userRepo;
+    private final QuestionRepo questionRepo;
+    private final DailyAnswerRepo dailyAnswerRepo;
+    private final WeightingRepo weightingRepo;
+    private final EmojiHistoryRepo emojiHistoryRepo;
     private final GeminiService geminiService;
 
     /**
@@ -35,7 +35,7 @@ public class DailyAnswerService {
     public AnswerResponse processDailyAnswers(String uid, List<AnswerRequestDto> answerDtos){
 
         // 2. 사용자 찾기
-        Users user = usersRepository.findByUid(uid)
+        Users user = userRepo.findByUid(uid)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + uid));
 
         // 3. 5대 특성치의 '변동값'을 누적할 Map 생성
@@ -48,7 +48,7 @@ public class DailyAnswerService {
 
         // 4. (중요) DB에서 Question 엔티티들을 미리 조회 (성능 향상)
         List<Long> questionIds = answerDtos.stream().map(AnswerRequestDto::questionId).toList();
-        List<Question> questions = questionRepository.findAllById(questionIds);
+        List<Question> questions = questionRepo.findAllById(questionIds);
         Map<Long, Question> questionMap = new HashMap<>();
         for (Question q : questions) {
             questionMap.put(q.getQuestionId(), q);
@@ -64,11 +64,11 @@ public class DailyAnswerService {
                         .question(question)
                         .score(dto.score())
                         .build();
-                dailyAnswerRepository.save(da); // (저장)
+                dailyAnswerRepo.save(da); // (저장)
             }
 
             // 5-2. 가중치 로직 조회 및 '변동값' 누적
-            List<WeightingLogic> logics = weightingLogicRepository
+            List<WeightingLogic> logics = weightingRepo
                     .findByQuestion_QuestionIdAndLogicScore(dto.questionId(), dto.score());
 
             for (WeightingLogic logic : logics) {
@@ -80,7 +80,7 @@ public class DailyAnswerService {
 
         // 6. 누적된 변동값을 Users 엔티티에 적용 및 저장
         user.applyScoreChanges(scoreChanges); // (Users 엔티티에 이 메소드 추가 필요 - 4단계 참고)
-        Users updatedUser = usersRepository.save(user); // (업데이트)
+        Users updatedUser = userRepo.save(user); // (업데이트)
 
         // 7. [Gemini 호출] 업데이트된 User 객체로 GeminiService 호출
         GeminiEmojiResponse geminiResponse = geminiService.getEmojiForAttributes(updatedUser);
@@ -97,7 +97,7 @@ public class DailyAnswerService {
                 .attribute5(updatedUser.getAttribute5())
                 .build();
 
-        EmojiHistory savedHistory = emojiHistoryRepository.save(history); // (저장)
+        EmojiHistory savedHistory = emojiHistoryRepo.save(history); // (저장)
 
         // 9. 프론트에 오늘 생성된 이모티콘과 점수를 반환
         return new AnswerResponse(

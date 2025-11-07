@@ -16,8 +16,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class EmojiService {
-    private EmojiHistoryRepo emojiHistoryRepo;
-    private UserRepo userRepo;
+    private final EmojiHistoryRepo emojiHistoryRepo;
+    private final UserRepo userRepo;
 
     /**
      * 특정 사용자(uid)의 가장 최신 이모티콘을 반환합니다.
@@ -58,11 +58,7 @@ public class EmojiService {
         return historyEntities.stream()
                 .map(history -> new EmojiHistoryResponse(
                         history.getEmoji(),
-                        history.getAttribute1(),
-                        history.getAttribute2(),
-                        history.getAttribute3(),
-                        history.getAttribute4(),
-                        history.getAttribute5(),
+                        history.getDescription(),
                         history.getCreatedAt()
                 ))
                 .collect(Collectors.toList());
