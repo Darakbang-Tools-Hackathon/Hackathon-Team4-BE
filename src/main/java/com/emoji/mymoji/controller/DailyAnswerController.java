@@ -20,7 +20,7 @@ public class DailyAnswerController {
      * 사용자의 하루치 답변 목록을 제출받아 처리하는 API
      * @param uid (보안 적용 전) 사용자의 Firebase UID
      * @param answerDtos [{questionId, score}, ...] 형식의 JSON 리스트
-     * @return 오늘 생성된 이모티콘과 그 당시의 특성치 스냅샷
+     * @return 오늘 생성된 이모티콘과
      */
     @PostMapping("/{uid}")
     public ResponseEntity<AnswerResponse> submitAnswers(

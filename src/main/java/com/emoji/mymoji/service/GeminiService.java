@@ -63,9 +63,9 @@ public class GeminiService {
                 return GeminiEmojiResponse.fallback(); // 응답이 비었을 경우
             }
         } catch (Exception e) {
-            // API 호출 실패 시
-            e.printStackTrace();
-            return GeminiEmojiResponse.fallback();
+            // API 호출 실패 시, 원인 파악을 위해 RuntimeException으로 감싸서 던집니다.
+            // 이렇게 하면 Spring Boot의 기본 예외 처리기가 스택 트레이스를 로그에 출력합니다.
+            throw new RuntimeException("Gemini API 호출 실패: " + e.getMessage(), e);
         }
     }
 
@@ -75,7 +75,6 @@ public class GeminiService {
     private String buildPrompt(Users user) {
         return String.format(
                 "당신은 사람의 5가지 성격 특성 점수(0~100)를 보고, 그 사람의 현재 상태를 가장 잘 나타내는 이모티콘 1개와, 그에 대한 1~2줄짜리 짧은 설명 및 감정 관리 팁을 제공하는 전문가입니다.\n" +
-                        // "[삭제] 반드시 다음 20개의 이모티콘 목록 중에서만 골라야 합니다..."
                         "\n" +
                         "다음은 사용자의 현재 점수입니다:\n" +
                         "- 정서 안정성 (낮을수록 불안): %.1f\n" +
@@ -106,9 +105,8 @@ public class GeminiService {
 
             return new GeminiEmojiResponse(emoji, description);
         } catch (Exception e) {
-            // 파싱 실패 (Gemini가 형식을 따르지 않았을 경우)
-            e.printStackTrace();
-            return GeminiEmojiResponse.fallback();
+            // 파싱 실패 (Gemini가 형식을 따르지 않았을 경우), 원인 파악을 위해 RuntimeException으로 감싸서 던집니다.
+            throw new RuntimeException("Gemini API 응답 파싱 실패. 응답 내용: " + response, e);
         }
     }
 }
