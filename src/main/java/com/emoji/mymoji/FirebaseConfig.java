@@ -17,7 +17,7 @@ public class FirebaseConfig {
     public FirebaseApp firebaseApp() throws Exception{
         //resources 폴더의 서비스 계정 키 파일을 읽어옵니다.
         //InputStream serviceAccount= new ClassPathResource("serviceAccountKey.json").getInputStream();
-        InputStream serviceAccount = new FileInputStream("serviceAccountKey.json");
+        InputStream serviceAccount = new FileInputStream("/etc/secrets/serviceAccountKey.json");
 
         //firebase 프로젝트에 인증하고 연결하는 데 필요한 설정(옵션) 객체를 만드는 과정
         FirebaseOptions options = FirebaseOptions.builder()
