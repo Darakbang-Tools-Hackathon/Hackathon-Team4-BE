@@ -10,7 +10,7 @@ import jakarta.persistence.Id;
 @NoArgsConstructor
 public class WeightingLogic {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "logic_id")
     private Long id;
 
