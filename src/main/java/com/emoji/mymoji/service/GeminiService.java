@@ -1,113 +1,68 @@
-package com.emoji.mymoji.service; // (패키지 경로는 본인에 맞게)
-
+package com.emoji.mymoji.service;
 
 import com.emoji.mymoji.domain.Users;
 import com.emoji.mymoji.dto.geminiDto.GeminiEmojiResponse;
-import com.emoji.mymoji.dto.geminiDto.GeminiRequest;
-import com.emoji.mymoji.dto.geminiDto.GeminiResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 @Service
-@RequiredArgsConstructor // RestTemplate 주입을 위해
+@RequiredArgsConstructor
 public class GeminiService {
 
-    // 1. (ChatClient 대신) RestTemplate 주입
-    private final RestTemplate restTemplate;
-
-    // 2. Render 환경 변수에서 API 키 가져오기
-    @Value("${SPRING_AI_GOOGLE_GEMINI_API_KEY}")
-    private String geminiApiKey;
-
-    // 3. Google AI API 엔드포인트
-    private static final String GEMINI_API_URL =
-            "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=";
-
-
-
     /**
-     * Users 객체(5가지 특성치)를 받아 Gemini API로 이모티콘을 생성합니다.
+     * Users 객체(5가지 특성치)를 받아 규칙 기반으로 이모티콘과 설명을 생성합니다.
+     * @param user 특성치를 포함한 Users 객체
+     * @return 생성된 이모티콘과 설명을 담은 응답 DTO
      */
     public GeminiEmojiResponse getEmojiForAttributes(Users user) {
+        double stability = user.getAttribute1();
+        double extraversion = user.getAttribute2();
+        double agreeableness = user.getAttribute3();
+        double conscientiousness = user.getAttribute4();
+        double openness = user.getAttribute5();
 
-        // 5. API에 전달할 프롬프트(명령어) 생성 (동일)
-        String prompt = buildPrompt(user);
+        String emoji;
+        String description;
 
-        // 6. HTTP 헤더 설정 (API 키와 JSON 타입 명시)
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        // (참고: API 키를 URL에 ?key=로 붙였기 때문에 헤더에는 필요 없습니다.)
-
-        // 7. HTTP 요청 본문(Body) 생성 (새 DTO 사용)
-        GeminiRequest requestBody = GeminiRequest.fromPrompt(prompt);
-
-        // 8. HTTP 요청 객체(Header + Body) 생성
-        HttpEntity<GeminiRequest> entity = new HttpEntity<>(requestBody, headers);
-
-        // 9. RestTemplate으로 POST 요청 실행 및 응답 받기
-        try {
-            GeminiResponse response = restTemplate.postForObject(
-                    GEMINI_API_URL + geminiApiKey, // API URL + Key
-                    entity,                      // 요청 객체
-                    GeminiResponse.class         // 응답받을 DTO 클래스
-            );
-
-            // 10. API 응답에서 이모티콘만 깔끔하게 추출
-            if (response != null && response.extractText() != null) {
-                return parseGeminiResponse(response.extractText());
-            } else {
-                return GeminiEmojiResponse.fallback(); // 응답이 비었을 경우
-            }
-        } catch (Exception e) {
-            // API 호출 실패 시, 원인 파악을 위해 RuntimeException으로 감싸서 던집니다.
-            // 이렇게 하면 Spring Boot의 기본 예외 처리기가 스택 트레이스를 로그에 출력합니다.
-            throw new RuntimeException("Gemini API 호출 실패: " + e.getMessage(), e);
+        // 규칙 기반 로직
+        if (extraversion > 80 && agreeableness > 70) {
+            emoji = "🥳";
+            description = "활기차고 친화적인, 파티의 주인공 같은 날이네요!";
+        } else if (stability < 20) {
+            emoji = "😵‍💫";
+            description = "조금 불안하고 어지러운 날인가요? 잠시 휴식이 필요해 보여요.";
+        } else if (conscientiousness > 85) {
+            emoji = "🦾";
+            description = "계획대로 착착! 강철 같은 의지로 모든 것을 해내는 날입니다.";
+        } else if (openness > 85) {
+            emoji = "🚀";
+            description = "새로운 아이디어가 샘솟고, 호기심이 우주를 향해 뻗어나가는 날!";
+        } else if (agreeableness > 80) {
+            emoji = "🐶";
+            description = "다정하고 따뜻한 마음씨가 주변 사람들을 행복하게 만들어요.";
+        } else if (extraversion < 20 && stability > 70) {
+            emoji = "🪴";
+            description = "고요하고 안정적인 하루. 혼자만의 시간을 즐기며 에너지를 충전해요.";
+        } else if (openness < 20 && conscientiousness > 70) {
+            emoji = "🗿";
+            description = "묵묵히 당신의 자리를 지키는 당신, 듬직하고 믿음직스러워요.";
+        } else if (extraversion > 70) {
+            emoji = "🤩";
+            description = "세상이 즐겁고 에너지가 넘치는 하루! 무엇이든 할 수 있을 것 같아요.";
+        } else if (agreeableness < 20) {
+            emoji = "🌵";
+            description = "오늘은 조금 예민한 날. 다른 사람과 거리를 두는 것도 좋은 방법이에요.";
+        } else if (conscientiousness < 20) {
+            emoji = "🫠";
+            description = "모든 게 녹아내리는 기분. 오늘은 아무것도 하지 않고 쉬어도 괜찮아요.";
+        } else if (openness > 70) {
+            emoji = "💡";
+            description = "번뜩이는 아이디어가 떠오르는 날! 메모하는 것을 잊지 마세요.";
+        } else {
+            emoji = "☕️";
+            description = "차분하고 평온한 하루. 커피 한 잔의 여유를 즐겨보세요.";
         }
-    }
 
-    /**
-     * Gemini API에 전달할 프롬프트를 생성하는 메소드 (동일)
-     */
-    private String buildPrompt(Users user) {
-        return String.format(
-                "당신은 사람의 5가지 성격 특성 점수(0~100)를 보고, 그 사람의 현재 상태를 가장 잘 나타내는 이모티콘 1개와, 그에 대한 1~2줄짜리 짧은 설명 및 감정 관리 팁을 제공하는 전문가입니다.\n" +
-                        "\n" +
-                        "다음은 사용자의 현재 점수입니다:\n" +
-                        "- 정서 안정성 (낮을수록 불안): %.1f\n" +
-                        "- 외향성 (높을수록 활기참): %.1f\n" +
-                        "- 친화성 (높을수록 다정함): %.1f\n" +
-                        "- 성실성 (높을수록 계획적): %.1f\n" +
-                        "- 개방성 (높을수록 호기심 많음): %.1f\n\n" +
-                        "반드시 다음 형식으로만 응답해야 합니다:\n" +
-                        "Emoji: [선택한 이모티콘 1개]\n" +
-                        "Description: [생성한 설명과 팁]",
-                user.getAttribute1(), user.getAttribute2(), user.getAttribute3(),
-                user.getAttribute4(), user.getAttribute5()
-        );
-    }
-
-    /**
-     *  Gemini의 응답("Emoji: ...\nDescription: ...")을 파싱하는 메소드
-     */
-    private GeminiEmojiResponse parseGeminiResponse(String response) {
-        try {
-            // "Emoji: 🤩"
-            String emojiLine = response.split("\n")[0];
-            String emoji = emojiLine.split("Emoji: ")[1].trim();
-
-            // "Description: 들뜬 상태입니다..."
-            String descLine = response.split("\n")[1];
-            String description = descLine.split("Description: ")[1].trim();
-
-            return new GeminiEmojiResponse(emoji, description);
-        } catch (Exception e) {
-            // 파싱 실패 (Gemini가 형식을 따르지 않았을 경우), 원인 파악을 위해 RuntimeException으로 감싸서 던집니다.
-            throw new RuntimeException("Gemini API 응답 파싱 실패. 응답 내용: " + response, e);
-        }
+        return new GeminiEmojiResponse(emoji, description);
     }
 }
